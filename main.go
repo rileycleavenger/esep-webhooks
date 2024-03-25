@@ -8,23 +8,18 @@ import (
     "io/ioutil"
     "net/http"
     "os"
+    "github.com/aws/aws-lambda-go/lambda"
 )
 
-type IssuePayload struct {
+type GitHubEvent struct {
     Issue struct {
         HTMLURL string `json:"html_url"`
     } `json:"issue"`
 }
 
-func FunctionHandler(ctx context.Context, input []byte) (string, error) {
-    var payload IssuePayload
-    err := json.Unmarshal(input, &payload)
-    if err != nil {
-        return "", fmt.Errorf("error parsing JSON input: %v", err)
-    }
-
+func FunctionHandler(ctx context.Context, event GitHubEvent) (string, error) {
     slackPayload := map[string]string{
-        "text": fmt.Sprintf("Issue Created: %s", payload.Issue.HTMLURL),
+        "text": fmt.Sprintf("Issue Created: %s", event.Issue.HTMLURL),
     }
     slackPayloadBytes, err := json.Marshal(slackPayload)
     if err != nil {
@@ -55,12 +50,5 @@ func FunctionHandler(ctx context.Context, input []byte) (string, error) {
 }
 
 func main() {
-    // This is just a test input. In actual AWS Lambda, the input will be provided by the event trigger.
-    input := []byte(`{"issue": {"html_url": "https://example.com/issue"}}`)
-    result, err := FunctionHandler(context.Background(), input)
-    if err != nil {
-        fmt.Printf("Error: %v\n", err)
-        return
-    }
-    fmt.Println("Response from Slack:", result)
+    lambda.Start(FunctionHandler)
 }
