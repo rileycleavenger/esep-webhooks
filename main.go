@@ -17,9 +17,23 @@ type GitHubEvent struct {
     } `json:"issue"`
 }
 
-func FunctionHandler(ctx context.Context, event GitHubEvent) (string, error) {
+type Event struct {
+    Body string `json:"body"`
+}
+
+func FunctionHandler(ctx context.Context, input json.RawMessage) (string, error) {
+    var e Event
+    if err := json.Unmarshal(input, &e); err != nil {
+        return "", fmt.Errorf("error decoding input: %v", err)
+    }
+
+    var gitHubEvent GitHubEvent
+    if err := json.Unmarshal([]byte(e.Body), &gitHubEvent); err != nil {
+        return "", fmt.Errorf("error decoding GitHub event: %v", err)
+    }
+
     slackPayload := map[string]string{
-        "text": fmt.Sprintf("Issue Created: %s", event.Issue.HTMLURL),
+        "text": fmt.Sprintf("Issue Created: %s", gitHubEvent.Issue.HTMLURL),
     }
     slackPayloadBytes, err := json.Marshal(slackPayload)
     if err != nil {
